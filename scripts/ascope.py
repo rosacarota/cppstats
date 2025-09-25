@@ -106,30 +106,30 @@ class Ascope:
 		return treeifdefs
 
 	def __createListFromTreeifdefs__(self, treeifdefs):
-	  '''This method returns a list representation for the input treeifdefs
+		'''This method returns a list representation for the input treeifdefs
 		(xml-objects). Corresponding #ifdef elements are in one sublist.'''
-	  try:
-		if not treeifdefs: return []
+		try:
+			if not treeifdefs: return []
 
-		listifdefs = list()
-		workerlist = list()
-		for nifdef in treeifdefs:
-			tag = nifdef.tag.split('}')[1]
-			if tag in ['if', 'ifdef', 'ifndef']:
-				workerlist.append(list())
-				workerlist[-1].append(nifdef)
-			elif tag in ['elif', 'else']:
-				workerlist[-1].append(nifdef)
-			elif tag in ['endif']:
-				workerlist[-1].append(nifdef)
-				listifdefs.append(workerlist[-1])
-				workerlist = workerlist[:-1]
-			else:
-				print(('ERROR: tag (%s) unknown!' % tag))
+			listifdefs = list()
+			workerlist = list()
+			for nifdef in treeifdefs:
+				tag = nifdef.tag.split('}')[1]
+				if tag in ['if', 'ifdef', 'ifndef']:
+					workerlist.append(list())
+					workerlist[-1].append(nifdef)
+				elif tag in ['elif', 'else']:
+					workerlist[-1].append(nifdef)
+				elif tag in ['endif']:
+					workerlist[-1].append(nifdef)
+					listifdefs.append(workerlist[-1])
+					workerlist = workerlist[:-1]
+				else:
+					print(('ERROR: tag (%s) unknown!' % tag))
 
-		return listifdefs
-  	  except IndexError:
-		  return []
+			return listifdefs
+		except IndexError:
+			return []
 
 	def __getParentTag__(self, tag):
 		parent = tag.getparent()
@@ -150,10 +150,10 @@ class Ascope:
 			annotationsOnScreen=set()
 			annotationsOnScreenCount=0
 			for annotation in allannotations:
-				  if annotation[0]<=screenend:
-				  	 if annotation[1]>screen:
-				  		annotationsOnScreen.add(annotation[2])
-				  		annotationsOnScreenCount=annotationsOnScreenCount+1
+				if annotation[0] <= screenend:
+					if annotation[1] > screen:
+						annotationsOnScreen.add(annotation[2])
+						annotationsOnScreenCount = annotationsOnScreenCount + 1
 			try:
 				stats[annotationsOnScreenCount]=stats[annotationsOnScreenCount]+1
 				statsU[len(annotationsOnScreen)]=statsU[len(annotationsOnScreen)]+1
@@ -167,13 +167,13 @@ class Ascope:
 	def __findFeatures__(self, ifdef, idx):
 		result=""
 		if ifdef[idx].tag.split('}')[1]=='else':
-			idx=0
-	                result="!"
+			idx = 0
+			result = "!"
 		if ifdef[idx].tag.split('}')[1]=='ifndef':
-			if (result=="!"):
-		        	result=""
+			if (result == "!"):
+				result = ""
 			else:
-                		result="!"
+				result = "!"
 
 		context = etree.iterwalk(ifdef[idx])
 		for action, elem in context:
@@ -199,26 +199,25 @@ class Ascope:
 		if (thisloc > 65000):
 			print(('INFO: file (%s) not fully processed!' % file))
 
-		# get root of the xml and iterate over it
+        # get root of the xml and iterate over it
 		root = tree.getroot()
 		treeifdefs = self.__getIfdefAnnotations__(root)
 		self.__checkDiscipline__(treeifdefs, thisloc, stats, statsU)
 
-
 	def checkFiles(self):
 		xmlfiles = returnFileNames(self.opts.dir, ['.xml'])
-		stats=[0]*Ascope.__depthannotation
-		statsU=[0]*Ascope.__depthannotation
-		for xmlfile in  xmlfiles:
+		stats = [0] * Ascope.__depthannotation
+		statsU = [0] * Ascope.__depthannotation
+		for xmlfile in xmlfiles:
 			self.checkFile(xmlfile, stats, statsU)
-		f = open("count.csv","a")
-		f.write(self.opts.dir+";"+str(Ascope.__screensize)+";")
-		for i in stats:
-		      f.write(str(i)+";")
-		for i in statsU:
-		      f.write(str(i)+";")
-		f.write("\n")
 
+		with open("count.csv", "a") as f:
+			f.write(self.opts.dir + ";" + str(Ascope.__screensize) + ";")
+			for i in stats:
+				f.write(str(i) + ";")
+			for i in statsU:
+				f.write(str(i) + ";")
+			f.write("\n")
 
 ##################################################
 if __name__ == '__main__':
