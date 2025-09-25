@@ -48,7 +48,7 @@ def getPreparationScript(filename):
 # #################################################
 # imports from subfolders
 
-import cli
+from . import cli
 
 # for rewriting of #ifdefs to "if defined(..)"
 # for turning multiline macros to oneliners
@@ -111,7 +111,7 @@ def replaceMultiplePatterns(replacements, infile, outfile):
     with open(infile, "rb") as source:
         with open(outfile, "w") as target:
             data = source.read()
-            for pattern, replacement in replacements.iteritems():
+            for pattern, replacement in list(replacements.items()):
                 data = re.sub(pattern, replacement, data, flags=re.MULTILINE)
             target.write(data)
 
@@ -146,9 +146,8 @@ def srcml2src(srcml, src):
 # #################################################
 # abstract preparation thread
 
-class AbstractPreparationThread(object):
+class AbstractPreparationThread(object, metaclass=ABCMeta):
     '''This class prepares a single folder according to the given kind of preparations in an independent thread.'''
-    __metaclass__ = ABCMeta
     sourcefolder = "source"
 
     def __init__(self, options, inputfolder=None, inputfile=None):
@@ -183,7 +182,7 @@ class AbstractPreparationThread(object):
     def startup(self):
         # LOGGING
         notify("starting '" + self.getPreparationName() + "' preparations:\n " + self.project)
-        print "# starting '" + self.getPreparationName() + "' preparations: " + self.project
+        print(("# starting '" + self.getPreparationName() + "' preparations: " + self.project))
 
     def teardown(self):
 
@@ -193,12 +192,12 @@ class AbstractPreparationThread(object):
 
         # LOGGING
         notify("finished '" + self.getPreparationName() + "' preparations:\n " + self.project)
-        print "# finished '" + self.getPreparationName() + "' preparations: " + self.project
+        print(("# finished '" + self.getPreparationName() + "' preparations: " + self.project))
 
     def run(self):
 
         if (self.notrunnable):
-            print "ERROR: No single file or input list of projects given!"
+            print("ERROR: No single file or input list of projects given!")
             return
 
         self.startup()
@@ -507,8 +506,8 @@ for cls in AbstractPreparationThread.__subclasses__():
 
 # exit, if there are no preparation threads available
 if (len(__preparationkinds) == 0):
-    print "ERROR: No preparation tasks found! Revert your changes or call the maintainer."
-    print "Exiting now..."
+    print("ERROR: No preparation tasks found! Revert your changes or call the maintainer.")
+    print("Exiting now...")
     sys.exit(1)
 __preparationkinds = OrderedDict(__preparationkinds)
 
@@ -537,9 +536,9 @@ def getFoldersFromInputListFile(inputlist):
     folders = file.read().splitlines()  # read lines from file without line breaks
     file.close()  # close file
 
-    folders = filter(lambda f: not f.startswith("#"), folders)  # remove commented lines
-    folders = filter(os.path.isdir, folders)  # remove all non-directories
-    folders = map(os.path.normpath, folders)  # normalize paths for easier transformations
+    folders = [f for f in folders if not f.startswith("#")]  # remove commented lines
+    folders = list(filter(os.path.isdir, folders))  # remove all non-directories
+    folders = list(map(os.path.normpath, folders))  # normalize paths for easier transformations
 
     # TODO log removed folders
 
@@ -564,7 +563,7 @@ def applyFolders(kind, inputlist, options):
 
 def applyFoldersAll(inputlist, options):
     kinds = getKinds()
-    for kind in kinds.keys():
+    for kind in list(kinds.keys()):
         applyFolders(kind, inputlist, options)
 
 
@@ -587,7 +586,7 @@ def main():
 
         # check if inputfile exists
         if (not os.path.isfile(options.infile)):
-            print "ERROR: input file '{}' cannot be found!".format(options.infile)
+            print(("ERROR: input file '{}' cannot be found!".format(options.infile)))
             sys.exit(1)
 
         applyFile(options.kind, options.infile, options)
@@ -598,7 +597,7 @@ def main():
 
         # check if list file exists
         if (not os.path.isfile(options.inputlist)):
-            print "ERROR: input file '{}' cannot be found!".format(options.inputlist)
+            print(("ERROR: input file '{}' cannot be found!".format(options.inputlist)))
             sys.exit(1)
 
         if (options.allkinds):
@@ -607,7 +606,7 @@ def main():
             applyFolders(options.kind, options.inputlist, options)
 
     else:
-        print "This should not happen! No input file or list of projects given!"
+        print("This should not happen! No input file or list of projects given!")
         sys.exit(1)
 
 

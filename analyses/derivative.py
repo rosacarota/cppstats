@@ -29,8 +29,9 @@ import itertools
 import os
 import re
 import sys
-import xmlrpclib
+import xmlrpc.client
 from argparse import ArgumentParser, RawTextHelpFormatter
+from functools import reduce
 
 # #################################################
 # path adjustments, so that all imports can be done relative to these paths
@@ -110,17 +111,14 @@ def returnFileNames(folder, extfilt = ['.xml']):
             currentfolder = wqueue[0]
             wqueue = wqueue[1:]
             foldercontent = os.listdir(currentfolder)
-            tmpfiles = filter(lambda n: os.path.isfile(
-                    os.path.join(currentfolder, n)), foldercontent)
-            tmpfiles = filter(lambda n: os.path.splitext(n)[1] in extfilt,
-                    tmpfiles)
-            tmpfiles = map(lambda n: os.path.join(currentfolder, n),
-                    tmpfiles)
+            tmpfiles = [n for n in foldercontent if os.path.isfile(
+                    os.path.join(currentfolder, n))]
+            tmpfiles = [n for n in tmpfiles if os.path.splitext(n)[1] in extfilt]
+            tmpfiles = [os.path.join(currentfolder, n) for n in tmpfiles]
             filesfound += tmpfiles
-            tmpfolders = filter(lambda n: os.path.isdir(
-                    os.path.join(currentfolder, n)), foldercontent)
-            tmpfolders = map(lambda n: os.path.join(currentfolder, n),
-                    tmpfolders)
+            tmpfolders = [n for n in foldercontent if os.path.isdir(
+                    os.path.join(currentfolder, n))]
+            tmpfolders = [os.path.join(currentfolder, n) for n in tmpfolders]
             wqueue += tmpfolders
 
     return filesfound
@@ -153,7 +151,7 @@ def _collectDefines(d):
     but not #define GLIBCVER(x,y,z) ...
     """
     __defset.add(d[0])
-    if __defsetf.has_key(__curfile):
+    if __curfile in __defsetf:
         __defsetf[__curfile].add(d[0])
     else:
         __defsetf[__curfile] = set([d[0]])
@@ -245,12 +243,12 @@ def _parseFeatureSignature(sig):
 
     try:
         rsig = expr.parseString(sig)[0]
-    except pypa.ParseException, e:
-        print('ERROR (parse): cannot parse sig (%s) -- (%s)' %
-                (sig, e.col))
+    except pypa.ParseException as e:
+        print(('ERROR (parse): cannot parse sig (%s) -- (%s)' %
+                (sig, e.col)))
         return sig
     except RuntimeError:
-        print('ERROR (time): cannot parse sig (%s)' % (sig))
+        print(('ERROR (time): cannot parse sig (%s)' % (sig)))
         return sig
     return (mal, ''.join(rsig))
 
@@ -286,7 +284,7 @@ def _prologCSV(folder):
     no corresponding _epilogCSV."""
     fd = open(os.path.join(folder, __outputfile), 'w')
     fdcsv = csv.writer(fd, delimiter=',')
-    fdcsv.writerow(__statsorder.__members__.keys())
+    fdcsv.writerow(list(__statsorder.__members__.keys()))
     return (fd, fdcsv)
 
 
@@ -308,7 +306,7 @@ def _countNestedIfdefs(root):
 
     if (len(cnlist) > 0):
         nnimax = max(cnlist)
-        nnitmp = filter(lambda n: n > 0, cnlist)
+        nnitmp = [n for n in cnlist if n > 0]
         nnimean = pstat.stats.lmean(nnitmp)
     else:
         nnimax = 0
@@ -445,7 +443,7 @@ def _getFeatures(root):
         finner = finner[:-1]
 
         # handle the feature code
-        if (features.has_key(itsig)):
+        if (itsig in features):
             features[itsig][1].append(itcode)
         else:
             features[itsig] = (len(flist)+1, [itcode])
@@ -625,8 +623,8 @@ def _getOuterGranularityStats(lgran):
                 if 'function' in gran[3:]: gostrbrl += 1
                 else: gostrbrg += 1
             else:
-                print('ERROR: gran (%s) at this '
-                        'level unknown (line %s)' % (gran, line))
+                print(('ERROR: gran (%s) at this '
+                        'level unknown (line %s)' % (gran, line)))
                 goerror += 1
             continue
         elif gran[0] in ['expr']:
@@ -642,8 +640,8 @@ def _getOuterGranularityStats(lgran):
             elif gran[1] in ['init', 'index']:          # test_stmt.c
                 gostmbgr += 1
             else:
-                print('ERROR: gran (%s) at this level'
-                        'unknown (line %s)' % (gran, line))
+                print(('ERROR: gran (%s) at this level'
+                        'unknown (line %s)' % (gran, line)))
                 goerror += 1
             continue
         elif gran[0] in ['while', 'do']:                # test_loop.c
@@ -678,8 +676,8 @@ def _getOuterGranularityStats(lgran):
         elif gran[0] in ['function']:            # function prototype
             continue
         else:
-            print('ERROR: outer granularity (%s, %s) not recognize!' % \
-                    (gran, line))
+            print(('ERROR: outer granularity (%s, %s) not recognize!' % \
+                    (gran, line)))
             goerror += 1
 
     return (gotopbgr, gofunbgr, gostrbrl, gostrbrg,
@@ -735,8 +733,8 @@ def _getInnerGranularityStats(igran):
             elif tag in ['expr_stmt', 'decl', 'init']:
                 gistmbgr += 1
             else:
-                print('ERROR: inner granularity (%s, %s, %s)) '
-                        'not recognized!' % (tag, event, line))
+                print(('ERROR: inner granularity (%s, %s, %s)) '
+                        'not recognized!' % (tag, event, line)))
                 gierror += 1
                 continue
             if event == 'start': skiptilltag = (tag, event, line)
@@ -761,10 +759,10 @@ def _getFeatureStats(features):
     lofmax = 0
     lofmean = 0
     lofstd = 0
-    nof = len(features.keys())
-    tmp = [item for (_, item) in features.itervalues()]
+    nof = len(list(features.keys()))
+    tmp = [item for (_, item) in list(features.values())]
     tmp = _flatten(tmp)
-    floflist = map(lambda n: n.count('\n'), tmp)
+    floflist = [n.count('\n') for n in tmp]
 
     if (len(floflist)):
         lofmin = min(floflist)
@@ -780,7 +778,7 @@ def _getFeatureStats(features):
 
 def _getFeaturesDepthOne(features):
     """This function returns all features that have the depth of one."""
-    nof1 = filter(lambda (sig, (depth, code)): depth == 1, features.iteritems())
+    nof1 = [sig_depth_code for sig_depth_code in iter(list(features.items())) if sig_depth_code[1][0] == 1]
     return nof1
 
 
@@ -824,7 +822,7 @@ def _distinguishFeatures(features):
     hom = {}
     hethom = {}
 
-    for (key, (_, item)) in features.iteritems():
+    for (key, (_, item)) in list(features.items()):
         # distinguish according to feature-signature
         # shared code
         if ('||' in key and (not '&&' in key)):
@@ -862,8 +860,8 @@ def _getNumOfDefines(defset):
     """
     # basic operation of this function is to check __defset against
     # __macrofuncs
-    funcmacros = __macrofuncs.keys()
-    funcmacros = map(lambda n: n.split('(')[0], funcmacros)
+    funcmacros = list(__macrofuncs.keys())
+    funcmacros = [n.split('(')[0] for n in funcmacros]
     funcmacros = set(funcmacros)
 
     return len((defset - funcmacros))
@@ -889,9 +887,9 @@ def _getScatteringTanglingDegrees(sigs, defines):
     tang = [0]*len(sigs)    # signatures overall
     for d in defines:
         dre = re.compile(r'\b'+d+r'\b')        # using word boundaries
-        vec = map(lambda s: not dre.search(s) is None, sigs)
+        vec = [not dre.search(s) is None for s in sigs]
         scat.append(vec.count(True))
-        tang = map(__add, tang, vec)
+        tang = list(map(__add, tang, vec))
 
     if (len(scat)): sdegmean = pstat.stats.lmean(scat)
     else: sdegmean = 0
@@ -1007,11 +1005,11 @@ def apply(folder):
     def _mergeFeatures(ffeatures):
         """This function merges the, with the parameter given
         dictionary (ffeatures) to the afeatures (overall-features)."""
-        for (sig, (depth, code)) in ffeatures.iteritems():
+        for (sig, (depth, code)) in list(ffeatures.items()):
             (mal, psig) = _parseFeatureSignature(sig)
 
             try:
-                sigmatch = _checkForEquivalentSig(sigmap.keys(), psig)
+                sigmatch = _checkForEquivalentSig(list(sigmap.keys()), psig)
                 (tmpflag, tmpdepth, tmpcode) = \
                     afeatures[sigmap[sigmatch][0]]
                 tmpdepth = min(tmpdepth, depth)
@@ -1042,32 +1040,31 @@ def apply(folder):
         try:
             tree = etree.parse(file)
         except etree.XMLSyntaxError:
-            print("ERROR: cannot parse (%s). Skipping this file." %
-                os.path.join(folder, file))
+            print(("ERROR: cannot parse (%s). Skipping this file." %
+                os.path.join(folder, file)))
             continue
 
-        print('INFO: parsing file (%5d) of (%5d) -- (%s).' %
-            (fcount, ftotal, os.path.join(folder, file)))
+        print(('INFO: parsing file (%5d) of (%5d) -- (%s).' %
+            (fcount, ftotal, os.path.join(folder, file))))
 
         root = tree.getroot()
         try:
             (features, _, featuresgrouter) = _getFeatures(root)
         except IfdefEndifMismatchError:
-            print("ERROR: ifdef-endif mismatch in file (%s)" %
-                (os.path.join(folder, file)))
+            print(("ERROR: ifdef-endif mismatch in file (%s)" %
+                (os.path.join(folder, file))))
             continue
         _mergeFeatures(features)
 
     # filter annotations that do not have any c-code
     # filter annotations with less than 2 features
-    afeatureitems = filter(lambda (a, (f, d, c)):
-            c != [''], afeatures.items())
-    annotations = map(lambda (a, (f, b, c)): (a, f), afeatureitems)
-    annotations2andmore = filter(lambda (a, f): len(f) > 1, annotations)
+    afeatureitems = [a_f_d_c for a_f_d_c in list(afeatures.items()) if a_f_d_c[1][2] != ['']]
+    annotations = [(a_f_b_c[0], a_f_b_c[1][0]) for a_f_b_c in afeatureitems]
+    annotations2andmore = [a_f for a_f in annotations if len(a_f[1]) > 1]
     annotationmap = dict()
     for (a, f) in annotations2andmore: annotationmap[a] = f
 
-    annotations2andmore = map(lambda s: set(s), annotationmap.values())
+    annotations2andmore = [set(s) for s in list(annotationmap.values())]
 
     projectpath = os.path.dirname(folder)
     fd = open(
@@ -1080,7 +1077,7 @@ def apply(folder):
     featurenames = reduce(set.union, annotations2andmore, set([]))
     for i in featurenames:
         fd.write(i + '\n')
-    for (a,f) in annotationmap.iteritems():
+    for (a,f) in list(annotationmap.items()):
         fd.write(prettyPrintSet(f)+';'+a+'\n')
     fd.close()
 

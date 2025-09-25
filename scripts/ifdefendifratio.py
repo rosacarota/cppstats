@@ -78,26 +78,26 @@ def apply(folder):
 	to each file and prints out the differance in case there is one."""
 	folder = os.path.abspath(folder)
 	files = os.listdir(folder)
-	files = filter(lambda n: os.path.splitext(n)[1] == ".xml", files)
+	files = [n for n in files if os.path.splitext(n)[1] == ".xml"]
 
 	for file in files:
 
 		try:
 			tree = etree.parse(file)
 		except etree.XMLSyntaxError:
-			print("ERROR: cannot parse (%s). Skipping this file!." % file)
+			print(("ERROR: cannot parse (%s). Skipping this file!." % file))
 
 		root = tree.getroot()
 		ifdef, endif = _getIfdefEndifRatio(root)
 
 		if (ifdef != endif):
-			print("INFO: (%30s) ifdef : endif  is  %5s : %5s" % (file, str(ifdef), str(endif)))
+			print(("INFO: (%30s) ifdef : endif  is  %5s : %5s" % (file, str(ifdef), str(endif))))
 
 
 def usage():
 	"""This function prints usage-informations to stdout."""
 	print('usage:')
-	print('  ' + sys.argv[0] + ' <folder>')
+	print(('  ' + sys.argv[0] + ' <folder>'))
 
 
 ##################################################

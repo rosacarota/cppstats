@@ -40,7 +40,7 @@ from collections import OrderedDict  # for ordered dictionaries
 # #################################################
 # imports from subfolders
 
-import cppstats, cli
+from . import cppstats, cli
 
 # import different kinds of analyses
 from analyses import general, generalvalues, discipline, featurelocations, derivative, interaction
@@ -63,7 +63,7 @@ if (__platform.startswith("cygwin")):
 elif (__platform.startswith("darwin") or __platform.startswith("linux")):
     pass
 else:
-    print "Your system '" + __platform + "' is not supported right now."
+    print(("Your system '" + __platform + "' is not supported right now."))
 
 
 # #################################################
@@ -84,9 +84,8 @@ def notify(message):
 # #################################################
 # abstract analysis thread
 
-class AbstractAnalysisThread(object):
+class AbstractAnalysisThread(object, metaclass=ABCMeta):
     '''This class analyzes a whole project according to the given kind of analysis in an independent thread.'''
-    __metaclass__ = ABCMeta
 
     def __init__(self, options, inputfolder=None, inputfile=None):
         self.options = options
@@ -118,7 +117,7 @@ class AbstractAnalysisThread(object):
     def startup(self):
         # LOGGING
         notify("starting '" + self.getName() + "' analysis:\n " + self.project)
-        print "# starting '" + self.getName() + "' analysis: " + self.project
+        print(("# starting '" + self.getName() + "' analysis: " + self.project))
 
     def teardown(self):
 
@@ -128,12 +127,12 @@ class AbstractAnalysisThread(object):
 
         # LOGGING
         notify("finished '" + self.getName() + "' analysis:\n " + self.project)
-        print "# finished '" + self.getName() + "' analysis: " + self.project
+        print(("# finished '" + self.getName() + "' analysis: " + self.project))
 
     def run(self):
 
         if (self.notrunnable):
-            print "ERROR: No single file or input list of projects given!"
+            print("ERROR: No single file or input list of projects given!")
             return
 
         self.startup()
@@ -331,8 +330,8 @@ for cls in AbstractAnalysisThread.__subclasses__():
 
 # exit, if there are no analysis threads available
 if (len(__analysiskinds) == 0):
-    print "ERROR: No analysis tasks found! Revert your changes or call the maintainer."
-    print "Exiting now..."
+    print("ERROR: No analysis tasks found! Revert your changes or call the maintainer.")
+    print("Exiting now...")
     sys.exit(1)
 
 __analysiskinds = OrderedDict(__analysiskinds)
@@ -362,9 +361,9 @@ def getFoldersFromInputListFile(inputlist):
     folders = file.read().splitlines()  # read lines from file without line breaks
     file.close()  # close file
 
-    folders = filter(lambda f: not f.startswith("#"), folders)  # remove commented lines
-    folders = filter(os.path.isdir, folders)  # remove all non-directories
-    folders = map(os.path.normpath, folders) # normalize paths for easier transformations
+    folders = [f for f in folders if not f.startswith("#")]  # remove commented lines
+    folders = list(filter(os.path.isdir, folders))  # remove all non-directories
+    folders = list(map(os.path.normpath, folders)) # normalize paths for easier transformations
 
     #TODO log removed folders
 
@@ -389,7 +388,7 @@ def applyFolders(kind, inputlist, options):
 
 def applyFoldersAll(inputlist, options):
     kinds = getKinds()
-    for kind in kinds.keys():
+    for kind in list(kinds.keys()):
         applyFolders(kind, inputlist, options)
 
 
@@ -412,7 +411,7 @@ def main():
 
         # check if inputfile exists
         if (not os.path.isfile(options.infile)):
-            print "ERROR: input file '{}' cannot be found!".format(options.infile)
+            print(("ERROR: input file '{}' cannot be found!".format(options.infile)))
             sys.exit(1)
 
         applyFile(options.kind, options.infile, options)
@@ -423,7 +422,7 @@ def main():
 
         # check if list file exists
         if (not os.path.isfile(options.inputlist)):
-            print "ERROR: input file '{}' cannot be found!".format(options.inputlist)
+            print(("ERROR: input file '{}' cannot be found!".format(options.inputlist)))
             sys.exit(1)
 
         if (options.allkinds):
@@ -432,7 +431,7 @@ def main():
             applyFolders(options.kind, options.inputlist, options)
 
     else:
-        print "This should not happen! No input file or list of projects given!"
+        print("This should not happen! No input file or list of projects given!")
         sys.exit(1)
 
 if __name__ == '__main__':

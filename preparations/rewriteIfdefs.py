@@ -54,6 +54,6 @@ def rewriteFile(fname, out = sys.stdout):
 ##################################################
 if __name__ == '__main__':
 	if (len(sys.argv) != 2):
-		print("usage: " + sys.argv[0] + " <filename>")
+		print(("usage: " + sys.argv[0] + " <filename>"))
 	else:
 		rewriteFile(sys.argv[1])

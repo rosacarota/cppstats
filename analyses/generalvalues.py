@@ -27,7 +27,7 @@ import csv
 import os
 import re
 import sys
-import xmlrpclib
+import xmlrpc.client
 from argparse import ArgumentParser, RawTextHelpFormatter
 from collections import OrderedDict
 
@@ -104,17 +104,14 @@ def returnFileNames(folder, extfilt = ['.xml']):
             currentfolder = wqueue[0]
             wqueue = wqueue[1:]
             foldercontent = os.listdir(currentfolder)
-            tmpfiles = filter(lambda n: os.path.isfile(
-                    os.path.join(currentfolder, n)), foldercontent)
-            tmpfiles = filter(lambda n: os.path.splitext(n)[1] in extfilt,
-                    tmpfiles)
-            tmpfiles = map(lambda n: os.path.join(currentfolder, n),
-                    tmpfiles)
+            tmpfiles = [n for n in foldercontent if os.path.isfile(
+                    os.path.join(currentfolder, n))]
+            tmpfiles = [n for n in tmpfiles if os.path.splitext(n)[1] in extfilt]
+            tmpfiles = [os.path.join(currentfolder, n) for n in tmpfiles]
             filesfound += tmpfiles
-            tmpfolders = filter(lambda n: os.path.isdir(
-                    os.path.join(currentfolder, n)), foldercontent)
-            tmpfolders = map(lambda n: os.path.join(currentfolder, n),
-                    tmpfolders)
+            tmpfolders = [n for n in foldercontent if os.path.isdir(
+                    os.path.join(currentfolder, n))]
+            tmpfolders = [os.path.join(currentfolder, n) for n in tmpfolders]
             wqueue += tmpfolders
 
     return filesfound
@@ -154,7 +151,7 @@ def _collectDefines(d):
     but not #define GLIBCVER(x,y,z) ...
     """
     __defset.add(d[0])
-    if __defsetf.has_key(__curfile):
+    if __curfile in __defsetf:
         __defsetf[__curfile].add(d[0])
     else:
         __defsetf[__curfile] = set([d[0]])
@@ -295,16 +292,16 @@ def _parseFeatureSignatureAndRewrite(sig):
 
     try:
         rsig = expr.parseString(sig)[0]
-    except pypa.ParseException, e:
-        print('ERROR (parse): cannot parse sig (%s) -- (%s)' %
-                (sig, e.col))
+    except pypa.ParseException as e:
+        print(('ERROR (parse): cannot parse sig (%s) -- (%s)' %
+                (sig, e.col)))
         return sig
     except RuntimeError:
-        print('ERROR (time): cannot parse sig (%s)' % (sig))
+        print(('ERROR (time): cannot parse sig (%s)' % (sig)))
         return sig
-    except ValueError, e:
-        print('ERROR (parse): cannot parse sig (%s) ~~ (%s)' %
-                (sig, e))
+    except ValueError as e:
+        print(('ERROR (parse): cannot parse sig (%s) ~~ (%s)' %
+                (sig, e)))
         return sig
     return ''.join(rsig)
 
@@ -440,7 +437,7 @@ def _getFeatures(root, options):
         finner = finner[:-1]
 
         # handle the feature code
-        if (features.has_key(itsig)):
+        if (itsig in features):
             features[itsig][1].append(itcode)
         else:
             features[itsig] = (len(flist)+1, [itcode])
@@ -660,7 +657,7 @@ def _getNestingDepths(root):
             # print "%s %s: %s (max: %s)" % (tag, _getMacroSignature(elem), cncur, cnmax)
 
     if (len(cnlist) > 0):
-        nnitmp = filter(lambda n: n > 0, cnlist)
+        nnitmp = [n for n in cnlist if n > 0]
         __nestedIfdefsLevels += nnitmp
 
     __nestingDepthsOfBranches += sighist
@@ -682,14 +679,14 @@ def _getScatteringTanglingValues(sigs, defines):
     tang = [0]*len(sigs)    # signatures overall
     for d in defines:
         dre = re.compile(r'\b'+d+r'\b')        # using word boundaries
-        vec = map(lambda s: not dre.search(s) is None, sigs)
+        vec = [not dre.search(s) is None for s in sigs]
         scat.append(vec.count(True))
-        tang = map(__add, tang, vec)
+        tang = list(map(__add, tang, vec))
 
     # create dictionaries from sigs and defines and corresponding
     # scattering and tangling values
-    scatdict = zip(defines, scat)
-    tangdict = zip(sigs, tang)
+    scatdict = list(zip(defines, scat))
+    tangdict = list(zip(sigs, tang))
 
     return (scatdict, tangdict)
 
@@ -741,11 +738,11 @@ def apply(folder, options):
     def _mergeFeatures(ffeatures):
         """This function merges the, with the parameter given
         dictionary (ffeatures) to the afeatures (overall-features)."""
-        for (sig, (depth, code)) in ffeatures.iteritems():
+        for (sig, (depth, code)) in list(ffeatures.items()):
             psig = _parseFeatureSignatureAndRewrite(sig)
 
             try:
-                sigmatch = _checkForEquivalentSig(sigmap.keys(), psig)
+                sigmatch = _checkForEquivalentSig(list(sigmap.keys()), psig)
                 (tmpdepth, tmpcode) = afeatures[sigmap[sigmatch][0]]
 #                if (tmpdepth != depth):
 #                    print("INFO: depths of feature fragments do not" +
@@ -775,20 +772,20 @@ def apply(folder, options):
         try:
             tree = etree.parse(file)
         except etree.XMLSyntaxError:
-            print("ERROR: cannot parse (%s). Skipping this file." % os.path.join(folder, file))
+            print(("ERROR: cannot parse (%s). Skipping this file." % os.path.join(folder, file)))
             continue
 
         root = tree.getroot()
         try:
             (features, _, featuresgrouter, elses) = _getFeatures(root, options)
         except IfdefEndifMismatchError:
-            print("ERROR: ifdef-endif mismatch in file (%s)" % (os.path.join(folder, file)))
+            print(("ERROR: ifdef-endif mismatch in file (%s)" % (os.path.join(folder, file))))
             continue
 
         # remove #else branches from list of features as there is no existing signature in the source code!
         if not options.rewriteifdefs:
             features = OrderedDict((sig, value)
-                                   for sig, value in features.iteritems()
+                                   for sig, value in list(features.items())
                                    if not sig.startswith(_elsePrefix))
 
         # merge features of file in the global list of features
@@ -799,10 +796,10 @@ def apply(folder, options):
 
         # file successfully parsed
         fcount += 1
-        print('INFO: parsing file (%5d) of (%5d) -- (%s).' % (fcount, ftotal, os.path.join(folder, file)))
+        print(('INFO: parsing file (%5d) of (%5d) -- (%s).' % (fcount, ftotal, os.path.join(folder, file))))
 
     # get signatures and defines
-    sigs = _flatten(sigmap.values())
+    sigs = _flatten(list(sigmap.values()))
     defs = list(__defset)
 
     # preparation: opn file for writing
@@ -920,6 +917,6 @@ if __name__ == '__main__':
 
     folder = os.path.abspath(options.folder)
     if (os.path.isdir(folder)):
-        apply(folder, options)
+        folder(*options)
     else:
         sys.exit(-1)

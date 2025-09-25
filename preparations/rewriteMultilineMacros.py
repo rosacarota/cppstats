@@ -76,7 +76,7 @@ def translate(infile, outfile):
 
 # usage
 def usage():
-	print('usage: ' + sys.argv[0] + ' <infile> <outfile>')
+	print(('usage: ' + sys.argv[0] + ' <infile> <outfile>'))
 	print('')
 	print('Translates multiple macros in the source-code of the infile')
 	print('to a oneliner-macro in the outfile.')

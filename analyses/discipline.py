@@ -49,17 +49,14 @@ def returnFileNames(folder, extfilt = ['.xml']):
             currentfolder = wqueue[0]
             wqueue = wqueue[1:]
             foldercontent = os.listdir(currentfolder)
-            tmpfiles = filter(lambda n: os.path.isfile(
-                    os.path.join(currentfolder, n)), foldercontent)
-            tmpfiles = filter(lambda n: os.path.splitext(n)[1] in extfilt,
-                    tmpfiles)
-            tmpfiles = map(lambda n: os.path.join(currentfolder, n),
-                    tmpfiles)
+            tmpfiles = [n for n in foldercontent if os.path.isfile(
+                    os.path.join(currentfolder, n))]
+            tmpfiles = [n for n in tmpfiles if os.path.splitext(n)[1] in extfilt]
+            tmpfiles = [os.path.join(currentfolder, n) for n in tmpfiles]
             filesfound += tmpfiles
-            tmpfolders = filter(lambda n: os.path.isdir(
-                    os.path.join(currentfolder, n)), foldercontent)
-            tmpfolders = map(lambda n: os.path.join(currentfolder, n),
-                    tmpfolders)
+            tmpfolders = [n for n in foldercontent if os.path.isdir(
+                    os.path.join(currentfolder, n))]
+            tmpfolders = [os.path.join(currentfolder, n) for n in tmpfolders]
             wqueue += tmpfolders
 
     return filesfound
@@ -81,7 +78,7 @@ class DisciplinedAnnotations:
         self.opts = options
         self.opts.dir = os.path.abspath(folder)
 
-        print self.opts.dir
+        print((self.opts.dir))
 
         if not self.opts.dir:
             oparser.print_help()
@@ -139,11 +136,11 @@ class DisciplinedAnnotations:
                     return -1
                 workerlist[-1].append(nifdef)
                 last = workerlist[-1]
-                getpairs = zip(last,last[1:])
-                map(lambda i: listifdefs.append(list(i)), getpairs)
+                getpairs = list(zip(last,last[1:]))
+                list([listifdefs.append(list(i)) for i in getpairs])
                 workerlist = workerlist[:-1]
             else:
-                print('[ERROR] ill-formed tag (%s) occured in line (%4s).' % (tag, nifdef.sourceline))
+                print(('[ERROR] ill-formed tag (%s) occured in line (%4s).' % (tag, nifdef.sourceline)))
 
         if workerlist:
             return -2
@@ -154,8 +151,8 @@ class DisciplinedAnnotations:
         '''This method filters out all ifdef-endif pairs that annotate only preprocessor directives.'''
         # iterate annotated blocks by determining all siblings of the #ifdef and filter out preprocessor
         # annotated elements
-        resultlist = filter(lambda (ifdef, endif): ifdef.getnext() != endif, listifdefs)
-        print('[INFO] before after: %s <-> %s' % (str(len(listifdefs)), str(len(resultlist))))
+        resultlist = [ifdef_endif for ifdef_endif in listifdefs if ifdef_endif[0].getnext() != ifdef_endif[1]]
+        print(('[INFO] before after: %s <-> %s' % (str(len(listifdefs)), str(len(resultlist)))))
         return resultlist
 
 
@@ -241,7 +238,7 @@ class DisciplinedAnnotations:
                 nodefuncsibs = [sib for sib in func.itersiblings(preceding=True)]
                 if nodeifdef == nodefuncsibs[0]:
                     if self.opts.verbose:
-                        print('[INFO] ill-formed compilation unit pattern occured in line (%4s).' % nodeifdef.sourceline)
+                        print(('[INFO] ill-formed compilation unit pattern occured in line (%4s).' % nodeifdef.sourceline))
                     listundisciplinedknown.append(listcorifdef)
                     continue
 
@@ -313,7 +310,7 @@ class DisciplinedAnnotations:
             poselsetag = poselse.tag.split('}')[1]
             if poselsetag in ['else', 'then']:
                 if self.opts.verbose:
-                    print('[INFO] if-then pattern occured in line (%4s).' % poselse.sourceline)
+                    print(('[INFO] if-then pattern occured in line (%4s).' % poselse.sourceline))
                 listundisciplinedknown.append(listcorifdef)
             else:
                 listundisciplinedunknown.append(listcorifdef)
@@ -350,7 +347,7 @@ class DisciplinedAnnotations:
             poselsetag = poselse.tag.split('}')[1]
             if poselsetag in ['else', 'then']:
                 if self.opts.verbose:
-                    print('[INFO] if-then pattern occured in line (%4s).' % poselse.sourceline)
+                    print(('[INFO] if-then pattern occured in line (%4s).' % poselse.sourceline))
                 listundisciplinedknown.append(listcorifdef)
             else:
                 listundisciplinedunknown.append(listcorifdef)
@@ -377,7 +374,7 @@ class DisciplinedAnnotations:
             parenttag = self.__getParentTag__(nodeendif)
             if parenttag in ['case']:
                 if self.opts.verbose:
-                    print('[INFO] case pattern occured in line (%4s).' % nodeendif.sourceline)
+                    print(('[INFO] case pattern occured in line (%4s).' % nodeendif.sourceline))
                 listundisciplinedknown.append(listcorifdef)
             else:
                 listundisciplinedunknown.append(listcorifdef)
@@ -423,7 +420,7 @@ class DisciplinedAnnotations:
 
             if ifdefsib != listcorifdef[0]:
                 if self.opts.verbose:
-                    print('[INFO] else-if pattern occured in line (%4s).' % ifdefsib.sourceline)
+                    print(('[INFO] else-if pattern occured in line (%4s).' % ifdefsib.sourceline))
                 listundisciplinedunknown.append(listcorifdef)
             else:
                 listundisciplinedknown.append(listcorifdef)
@@ -465,7 +462,7 @@ class DisciplinedAnnotations:
                 listundisciplinedunknown.append(listcorifdef)
             else:
                 if self.opts.verbose:
-                    print('[INFO] param/argument pattern occured in line (%4s).' % nodeifdef.sourceline)
+                    print(('[INFO] param/argument pattern occured in line (%4s).' % nodeifdef.sourceline))
                 listundisciplinedknown.append(listcorifdef)
 
         assert len(listifdefs) == len(listundisciplinedknown)+len(listundisciplinedunknown)
@@ -504,7 +501,7 @@ class DisciplinedAnnotations:
                 listundisciplinedunknown.append(listcorifdef)
             else:
                 if self.opts.verbose:
-                    print('[INFO] expression pattern occured in line (%4s).' % nodeifdef.sourceline)
+                    print(('[INFO] expression pattern occured in line (%4s).' % nodeifdef.sourceline))
                 listundisciplinedknown.append(listcorifdef)
 
         assert len(listifdefs) == len(listundisciplinedknown)+len(listundisciplinedunknown)
@@ -516,8 +513,8 @@ class DisciplinedAnnotations:
         about the pattern: file and line.'''
         for ifdef in listifdefs:
             if self.opts.log:
-                print('[INFO] Unknown pattern in file (%s) and line (%s)' % \
-                        (file, ifdef[0].sourceline))
+                print(('[INFO] Unknown pattern in file (%s) and line (%s)' % \
+                        (file, ifdef[0].sourceline)))
 
     def __checkDiscipline__(self, treeifdefs, file):
         '''This method checks a number of patterns in the given treeifdefs.
@@ -526,10 +523,10 @@ class DisciplinedAnnotations:
         listundisciplined = self.__createListFromTreeifdefs__(treeifdefs)
         listundisciplined = self.__filterConditionalPreprocessorDirectives(listundisciplined)
         if (listundisciplined == -1):
-            print('[ERROR] Too many #endifs in file (%s)' % file)
+            print(('[ERROR] Too many #endifs in file (%s)' % file))
             return
         if (listundisciplined == -2):
-            print('[ERROR] Not enough #endifs in file (%s)' % file)
+            print(('[ERROR] Not enough #endifs in file (%s)' % file))
             return
         self.overallblocks += len(listundisciplined)
 
@@ -612,7 +609,7 @@ class DisciplinedAnnotations:
             tree = etree.parse(file)
             f = open(file, 'r')
         except etree.XMLSyntaxError:
-            print('ERROR: file (%s) is not valid. Skipping it.' % file)
+            print(('ERROR: file (%s) is not valid. Skipping it.' % file))
             return
 
         # get LOC
@@ -624,13 +621,13 @@ class DisciplinedAnnotations:
         try:
             self.__checkDiscipline__(treeifdefs, file)
         except:
-            print('[ERROR]: file (%s) is not valid. Skipping it.' % file)
+            print(('[ERROR]: file (%s) is not valid. Skipping it.' % file))
             return
 
     def checkFiles(self):
         xmlfiles = returnFileNames(self.opts.dir, ['.xml'])
         for xmlfile in  xmlfiles:
-            print('[INFO] checking file %s' % xmlfile)
+            print(('[INFO] checking file %s' % xmlfile))
             self.checkFile(xmlfile)
         projectpath = os.path.dirname(self.opts.dir)
         projectname = os.path.basename(projectpath)

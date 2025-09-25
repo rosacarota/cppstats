@@ -52,17 +52,14 @@ def returnFileNames(folder, extfilt = ['.xml']):
 			currentfolder = wqueue[0]
 			wqueue = wqueue[1:]
 			foldercontent = os.listdir(currentfolder)
-			tmpfiles = filter(lambda n: os.path.isfile(
-					os.path.join(currentfolder, n)), foldercontent)
-			tmpfiles = filter(lambda n: os.path.splitext(n)[1] in extfilt,
-					tmpfiles)
-			tmpfiles = map(lambda n: os.path.join(currentfolder, n),
-					tmpfiles)
+			tmpfiles = [n for n in foldercontent if os.path.isfile(
+					os.path.join(currentfolder, n))]
+			tmpfiles = [n for n in tmpfiles if os.path.splitext(n)[1] in extfilt]
+			tmpfiles = [os.path.join(currentfolder, n) for n in tmpfiles]
 			filesfound += tmpfiles
-			tmpfolders = filter(lambda n: os.path.isdir(
-					os.path.join(currentfolder, n)), foldercontent)
-			tmpfolders = map(lambda n: os.path.join(currentfolder, n),
-					tmpfolders)
+			tmpfolders = [n for n in foldercontent if os.path.isdir(
+					os.path.join(currentfolder, n))]
+			tmpfolders = [os.path.join(currentfolder, n) for n in tmpfolders]
 			wqueue += tmpfolders
 
 	return filesfound
@@ -128,7 +125,7 @@ class Ascope:
 				listifdefs.append(workerlist[-1])
 				workerlist = workerlist[:-1]
 			else:
-				print('ERROR: tag (%s) unknown!' % tag)
+				print(('ERROR: tag (%s) unknown!' % tag))
 
 		return listifdefs
   	  except IndexError:
@@ -194,13 +191,13 @@ class Ascope:
 
 			f = open(file, 'r')
 		except etree.XMLSyntaxError:
-			print('ERROR: file (%s) is not valid. Skipping it.' % file)
+			print(('ERROR: file (%s) is not valid. Skipping it.' % file))
 			return
 
 		#get LOC
 		thisloc=len(f.readlines())-2
 		if (thisloc > 65000):
-			print('INFO: file (%s) not fully processed!' % file)
+			print(('INFO: file (%s) not fully processed!' % file))
 
 		# get root of the xml and iterate over it
 		root = tree.getroot()

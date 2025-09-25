@@ -27,7 +27,7 @@ import csv
 import os
 import re
 import sys
-import xmlrpclib
+import xmlrpc.client
 from argparse import ArgumentParser, RawTextHelpFormatter
 
 
@@ -163,17 +163,14 @@ def returnFileNames(folder, extfilt=['.xml']):
             currentfolder = wqueue[0]
             wqueue = wqueue[1:]
             foldercontent = os.listdir(currentfolder)
-            tmpfiles = filter(lambda n: os.path.isfile(
-                os.path.join(currentfolder, n)), foldercontent)
-            tmpfiles = filter(lambda n: os.path.splitext(n)[1] in extfilt,
-                              tmpfiles)
-            tmpfiles = map(lambda n: os.path.join(currentfolder, n),
-                           tmpfiles)
+            tmpfiles = [n for n in foldercontent if os.path.isfile(
+                os.path.join(currentfolder, n))]
+            tmpfiles = [n for n in tmpfiles if os.path.splitext(n)[1] in extfilt]
+            tmpfiles = [os.path.join(currentfolder, n) for n in tmpfiles]
             filesfound += tmpfiles
-            tmpfolders = filter(lambda n: os.path.isdir(
-                os.path.join(currentfolder, n)), foldercontent)
-            tmpfolders = map(lambda n: os.path.join(currentfolder, n),
-                             tmpfolders)
+            tmpfolders = [n for n in foldercontent if os.path.isdir(
+                os.path.join(currentfolder, n))]
+            tmpfolders = [os.path.join(currentfolder, n) for n in tmpfolders]
             wqueue += tmpfolders
 
     return filesfound
@@ -190,7 +187,7 @@ def _collectDefines(d):
     but not #define GLIBCVER(x,y,z) ...
     """
     __defset.add(d[0])
-    if __defsetf.has_key(__curfile):
+    if __curfile in __defsetf:
         __defsetf[__curfile].add(d[0])
     else:
         __defsetf[__curfile] = set([d[0]])
@@ -319,16 +316,16 @@ def _parseFeatureSignatureAndRewrite(sig):
 
     try:
         rsig = expr.parseString(sig)[0]
-    except pypa.ParseException, e:
-        print('ERROR (parse): cannot parse sig (%s) -- (%s)' %
-              (sig, e.col))
+    except pypa.ParseException as e:
+        print(('ERROR (parse): cannot parse sig (%s) -- (%s)' %
+              (sig, e.col)))
         return sig
     except RuntimeError:
-        print('ERROR (time): cannot parse sig (%s)' % (sig))
+        print(('ERROR (time): cannot parse sig (%s)' % (sig)))
         return sig
-    except ValueError, e:
-        print('ERROR (parse): cannot parse sig (%s) ~~ (%s)' %
-              (sig, e))
+    except ValueError as e:
+        print(('ERROR (parse): cannot parse sig (%s) ~~ (%s)' %
+              (sig, e)))
         return sig
     return ''.join(rsig)
 
@@ -451,7 +448,7 @@ def _getFeatures(root, featlocations):
         itouter = fouter[-1]  # feature surround tags
         fouter = fouter[:-1]
 
-        for i in xrange(0, len(itouter)):
+        for i in range(0, len(itouter)):
             sig = itouter[i][0]
             elem = itouter[i][1]
 
@@ -477,7 +474,7 @@ def _getFeatures(root, featlocations):
         finner = finner[:-1]
 
         # handle the feature code
-        if (features.has_key(itsig)):
+        if (itsig in features):
             features[itsig][1].append(itcode)
         else:
             features[itsig] = (len(flist) + 1, [itcode])
@@ -617,7 +614,7 @@ def _getFeaturesAtLocations(flocations, defines):
 
     for d in defines:
         dre = re.compile(r'\b' + d + r'\b')  # using word boundaries
-        vec = map(lambda s: not dre.search(s) is None, sigs)
+        vec = [not dre.search(s) is None for s in sigs]
 
         for floc, contained in zip(flocations, vec):
             if (contained):
@@ -659,7 +656,7 @@ def apply(folder, options):
     featlocations = set()  # list of feature locations of class FeatureLocation
 
     # outputfile
-    fd, fdcsv = _prologCSV(os.path.join(folder, os.pardir), __outputfile, __statsorder.__members__.keys())
+    fd, fdcsv = _prologCSV(os.path.join(folder, os.pardir), __outputfile, list(__statsorder.__members__.keys()))
 
     # list-of-features file
     loffheadings = ['FILENAME', 'CONSTANTS']
@@ -681,27 +678,27 @@ def apply(folder, options):
         try:
             tree = etree.parse(file)
         except etree.XMLSyntaxError:
-            print("ERROR: cannot parse (%s). Skipping this file." % os.path.join(folder, file))
+            print(("ERROR: cannot parse (%s). Skipping this file." % os.path.join(folder, file)))
             continue
 
         root = tree.getroot()
         try:
             (features, _, _) = _getFeatures(root, featlocations)
         except IfdefEndifMismatchError:
-            print("ERROR: ifdef-endif mismatch in file (%s)" % (os.path.join(folder, file)))
+            print(("ERROR: ifdef-endif mismatch in file (%s)" % (os.path.join(folder, file))))
             continue
 
         # parse features and get all defined configuration constants
-        for (sig, (depth, code)) in features.iteritems():
+        for (sig, (depth, code)) in list(features.items()):
             psig = _parseFeatureSignatureAndRewrite(sig)
 
         # file successfully parsed
         fcount += 1
-        print('INFO: parsing file (%5d) of (%5d) -- (%s).' % (fcount, ftotal, os.path.join(folder, file)))
+        print(('INFO: parsing file (%5d) of (%5d) -- (%s).' % (fcount, ftotal, os.path.join(folder, file))))
 
         # print features for this file to list-of-features file
         featureslist = list(__defsetf[__curfile]) \
-            if __defsetf.has_key(__curfile) else '' # list of features within the current file
+            if __curfile in __defsetf else '' # list of features within the current file
         listoffeaturesstring = ';'.join(sorted(featureslist)) # sort and join
         loffwriter.writerow([__curfile, listoffeaturesstring]) # write row to file
 

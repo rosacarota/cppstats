@@ -98,12 +98,12 @@ def _parseIfDefExpression(ifdefexp):
 
     try:
         rsig = expr.parseString(ifdefexp)[0]
-    except pypa.ParseException, e:
-        print('ERROR (parse): cannot parse sig (%s) -- (%s)' %
-                (ifdefexp, e.col))
+    except pypa.ParseException as e:
+        print(('ERROR (parse): cannot parse sig (%s) -- (%s)' %
+                (ifdefexp, e.col)))
         return ifdefexp
     except RuntimeError:
-        print('ERROR (time): cannot parse sig (%s)' % (ifdefexp))
+        print(('ERROR (time): cannot parse sig (%s)' % (ifdefexp)))
         return ifdefexp
     return (mal, ''.join(rsig))
 
@@ -125,9 +125,9 @@ def _collectIfdefExpressions(fname):
             + pypa.StringEnd()
 
     with open(fname, 'r') as fd:
-        for line in fd.xreadlines():
+        for line in fd:
             try:
-                print(__macro.parseString(line))
+                print((__macro.parseString(line)))
             except pypa.ParseException:
                 pass
     return __ifdefexplist
@@ -157,7 +157,7 @@ def _filterAnnotatedIfdefs(fnamein, fnameout):
                             fdout.write('\n')
                             continue
                     else:
-                        print("ERROR: directive (%s) not processed!" % parseddirective)
+                        print(("ERROR: directive (%s) not processed!" % parseddirective))
                     fdout.write(line)
                 # found regular C code
                 else:
@@ -167,7 +167,7 @@ def _filterAnnotatedIfdefs(fnamein, fnameout):
 ##################################################
 if __name__ == '__main__':
     symbols, expression = _parseIfDefExpression('AA && BB')
-    print(symbols, expression)
-    print(_collectIfdefExpressions('/home/joliebig/workspace/reverse_cpp/test/test.c'))
+    print((symbols, expression))
+    print((_collectIfdefExpressions('/home/joliebig/workspace/reverse_cpp/test/test.c')))
     _filterAnnotatedIfdefs('/home/joliebig/workspace/reverse_cpp/test/filterannotateddirectives.h',
                            '/home/joliebig/workspace/reverse_cpp/test/filterannotateddirectives_out.h')

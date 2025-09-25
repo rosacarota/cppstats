@@ -43,7 +43,7 @@ import tempfile # for temporary files
 # imports from subfolders
 
 # import different kinds of analyses
-import cli, preparation, analysis
+from . import cli, preparation, analysis
 
 
 # #################################################
@@ -70,8 +70,8 @@ __kinds.append(('interaction', ('discipline', 'interaction')))
 
 # exit, if there are no analysis threads available
 if (len(__kinds) == 0) :
-    print "ERROR: No analyses available! Revert your changes or call the maintainer."
-    print "Exiting now..."
+    print("ERROR: No analyses available! Revert your changes or call the maintainer.")
+    print("Exiting now...")
     sys.exit(1)
 
 __kinds = OrderedDict(__kinds)
@@ -107,7 +107,7 @@ def applyFolders(option_kind, inputlist, options):
     analysis.applyFolders(analysisKind, inputlist, options)
 
 def applyFoldersAll(inputlist, options):
-    for kind in __kinds.keys():
+    for kind in list(__kinds.keys()):
         applyFolders(kind, inputlist, options)
 
 
@@ -128,7 +128,7 @@ def main():
 
         # check if inputfile exists
         if (not os.path.isfile(options.infile)):
-            print "ERROR: input file '{}' cannot be found!".format(options.infile)
+            print(("ERROR: input file '{}' cannot be found!".format(options.infile)))
             sys.exit(1)
 
         applyFile(options.kind, options.infile, options.outfile, options)
@@ -139,7 +139,7 @@ def main():
 
         # check if list file exists
         if (not os.path.isfile(options.inputlist)):
-            print "ERROR: input file '{}' cannot be found!".format(options.inputlist)
+            print(("ERROR: input file '{}' cannot be found!".format(options.inputlist)))
             sys.exit(1)
 
         if (options.allkinds):
@@ -148,7 +148,7 @@ def main():
             applyFolders(options.kind, options.inputlist, options)
 
     else:
-        print "This should not happen! No input file or list of projects given!"
+        print("This should not happen! No input file or list of projects given!")
         sys.exit(1)
 
 if __name__ == '__main__':

@@ -143,7 +143,7 @@ def apply(fname, out=sys.stdout):
 
 
 def usage():
-    print(sys.argv[0] + ' filename')
+    print((sys.argv[0] + ' filename'))
     print('programm writes results to stdout')
 
 

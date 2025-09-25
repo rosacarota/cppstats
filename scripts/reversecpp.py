@@ -72,17 +72,14 @@ class Util:
                 currentfolder = wqueue[0]
                 wqueue = wqueue[1:]
                 foldercontent = os.listdir(currentfolder)
-                tmpfiles = filter(lambda n: os.path.isfile(
-                        os.path.join(currentfolder, n)), foldercontent)
-                tmpfiles = filter(lambda n: os.path.splitext(n)[1] in extfilt,
-                        tmpfiles)
-                tmpfiles = map(lambda n: os.path.join(currentfolder, n),
-                        tmpfiles)
+                tmpfiles = [n for n in foldercontent if os.path.isfile(
+                        os.path.join(currentfolder, n))]
+                tmpfiles = [n for n in tmpfiles if os.path.splitext(n)[1] in extfilt]
+                tmpfiles = [os.path.join(currentfolder, n) for n in tmpfiles]
                 filesfound += tmpfiles
-                tmpfolders = filter(lambda n: os.path.isdir(
-                        os.path.join(currentfolder, n)), foldercontent)
-                tmpfolders = map(lambda n: os.path.join(currentfolder, n),
-                        tmpfolders)
+                tmpfolders = [n for n in foldercontent if os.path.isdir(
+                        os.path.join(currentfolder, n))]
+                tmpfolders = [os.path.join(currentfolder, n) for n in tmpfolders]
                 wqueue += tmpfolders
 
             return filesfound
@@ -103,14 +100,14 @@ class ReverseCPP:
     def setup(self):
         if not os.path.exists(tmpfolder):
             if self.opts.debug:
-                print('INFO: tmpfolder (%s) does not exist; creating it' % tmpfolder)
+                print(('INFO: tmpfolder (%s) does not exist; creating it' % tmpfolder))
             os.mkdir(tmpfolder)
         if not os.path.exists(src2srcml):
-            print('ERROR: src2srcml tool is not available under path (%s)' % src2srcml)
+            print(('ERROR: src2srcml tool is not available under path (%s)' % src2srcml))
             print('ERROR: program terminating ...!')
             sys.exit(-1)
         if not os.path.exists(srcml2src):
-            print('ERROR: srcml2src tool is not available under path (%s)' % srcml2src)
+            print(('ERROR: srcml2src tool is not available under path (%s)' % srcml2src))
             print('ERROR: program terminating ...!')
             sys.exit(-1)
 
@@ -128,7 +125,7 @@ class ReverseCPP:
         fdout = open(os.path.abspath(outfile), 'w')
         lineid = 0
 
-        for line in fdin.xreadlines():
+        for line in fdin:
             # found #if{ndef|def||} or #e{ndif|lse|lif}
             if line.startswith('#if') or line.startswith('#e'):
                 fdout.write('//'+ line + str(lineid))
@@ -140,7 +137,7 @@ class ReverseCPP:
             fdout.write(line.strip() + '/* lineid=' + str(lineid) + ' */\n')
             lineid += 1
 
-        print('processed file ' + os.path.abspath(infile))
+        print(('processed file ' + os.path.abspath(infile)))
 
     def createVariants(self, symbols, fname):
         '''
@@ -148,15 +145,15 @@ class ReverseCPP:
         and return the list of generated files.
         '''
         generatedfiles = []
-        for configuration in itertools.product(range(2), repeat=len(symbols)):
+        for configuration in itertools.product(list(range(2)), repeat=len(symbols)):
             configuration = list(configuration)
-            pairs = zip(configuration, symbols)
-            validpairs = filter(lambda (m, n): m != 0, pairs)
+            pairs = list(zip(configuration, symbols))
+            validpairs = [m_n for m_n in pairs if m_n[0] != 0]
 
             if len(validpairs): validdefines = list(zip(*validpairs)[1])
             else: validdefines = []
 
-            validdefines = map(lambda n: '-D'+n, validdefines)
+            validdefines = ['-D'+n for n in validdefines]
             cppinvocation = [cpptool]
             cppinvocation += validdefines
             cppinvocation += [fname]
@@ -202,7 +199,7 @@ class ReverseCPP:
         flist = self.createVariants(symbols, '/home/joliebig/workspace/reverse_cpp/test/test.c')
         flist = self.createXMLRepresenations(flist)
         print(flist)
-        print(_collectIfdefExpressions('/home/joliebig/workspace/reverse_cpp/test/test.c'))
+        print((_collectIfdefExpressions('/home/joliebig/workspace/reverse_cpp/test/test.c')))
 
 ##################################################
 if __name__ == '__main__':

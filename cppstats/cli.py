@@ -30,8 +30,8 @@ from argparse import ArgumentParser, RawTextHelpFormatter, _VersionAction  # for
 # #################################################
 # imports from subfolders
 
-import preparation, analysis
-import cppstats as cstats # import cppstats.py and avoid confusion with module
+from . import preparation, analysis
+from . import cppstats as cstats # import cppstats.py and avoid confusion with module
 
 
 # #################################################
@@ -110,8 +110,8 @@ def getOptions(kinds, step=steps.ALL):
 
     # kinds
     kindgroup = parser.add_mutually_exclusive_group(required=False)
-    kindgroup.add_argument("--kind", choices=kinds.keys(), dest="kind",
-                           default=kinds.keys()[0], metavar="<K>",
+    kindgroup.add_argument("--kind", choices=list(kinds.keys()), dest="kind",
+                           default=list(kinds.keys())[0], metavar="<K>",
                            help="the preparation to be performed [default: %(default)s]")
     kindgroup.add_argument("-a", "--all", action="store_true", dest="allkinds", default=False,
                            help="perform all available kinds of preparation/analysis [default: %(default)s]")
@@ -160,22 +160,22 @@ def getOptions(kinds, step=steps.ALL):
     # ADD POSSIBLE PREPARATION/ANALYSIS KINDS AND THEIR COMMAND-LINE ARGUMENTS
 
     if step == steps.ALL:
-        parser.add_argument_group("Possible Kinds of Analyses <K>".upper(), ", ".join(kinds.keys()))
+        parser.add_argument_group("Possible Kinds of Analyses <K>".upper(), ", ".join(list(kinds.keys())))
 
         # add options for each analysis kind
-        for kind in kinds.values():
+        for kind in list(kinds.values()):
             analysisPart = kind[1]
             analysisThread = analysis.getKinds().get(analysisPart)
             analysisThread.addCommandLineOptions(parser)
 
     elif step == steps.PREPARATION:
-        parser.add_argument_group("Possible Kinds of Preparation <K>".upper(), ", ".join(kinds.keys()))
+        parser.add_argument_group("Possible Kinds of Preparation <K>".upper(), ", ".join(list(kinds.keys())))
 
     elif step == steps.ANALYSIS:
-        parser.add_argument_group("Possible Kinds of Analyses <K>".upper(), ", ".join(kinds.keys()))
+        parser.add_argument_group("Possible Kinds of Analyses <K>".upper(), ", ".join(list(kinds.keys())))
 
         # add options for each analysis kind
-        for cls in kinds.values():
+        for cls in list(kinds.values()):
             cls.addCommandLineOptions(parser)
 
 
@@ -209,5 +209,5 @@ def addConstants(options):
 def checkConstraints(options):
     # constraints
     if (options.allkinds == True and options.inputfile):
-        print "Using all kinds of preparation for a single input and output file is weird!"
+        print("Using all kinds of preparation for a single input and output file is weird!")
         sys.exit(1)
